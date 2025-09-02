@@ -9,6 +9,28 @@ import time
 import json
 import re
 import requests
+import threading
+from flask import Flask
+
+# Flask server for uptime monitoring
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return {'status': 'Bot is running', 'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')}, 200
+
+@app.route('/health')
+def health():
+    return {'status': 'healthy', 'service': 'sms-monitoring-bot'}, 200
+
+def run_flask():
+    app.run(host='0.0.0.0', port=8080, debug=False)
+
+# Start Flask server in background thread
+flask_thread = threading.Thread(target=run_flask)
+flask_thread.daemon = True
+flask_thread.start()
+print("Flask server started on port 8080")
 
 # Configuration
 USERNAME = 'Keshav2009'
