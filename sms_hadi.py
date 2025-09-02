@@ -10,6 +10,7 @@ import json
 import re
 import requests
 import threading
+import os
 from flask import Flask
 
 # Flask server for uptime monitoring
@@ -50,10 +51,19 @@ options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--disable-gpu')
 options.add_argument('--window-size=1920,1080')
+options.add_argument('--disable-extensions')
+options.add_argument('--disable-web-security')
+options.add_argument('--allow-running-insecure-content')
+
+# Set Chrome binary path for production environment
+if os.environ.get('RENDER'):
+    options.binary_location = '/usr/bin/google-chrome'
+
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service, options=options)
 wait = WebDriverWait(driver, 15)
 
+# ... rest of your functions remain the same ...
 def extract_country_and_flag(range_str):
     """Extract country name and get its flag"""
     if not range_str:
