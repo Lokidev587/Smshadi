@@ -81,7 +81,7 @@ def send_telegram_message(msg_html):
             "text": msg_html,
             "parse_mode": "HTML",
             "disable_web_page_preview": True,
-            "reply_markup": json.dumps(inline_keyboard)  # Add the inline keyboard
+            "reply_markup": json.dumps(inline_keyboard)
         }
         
         try:
@@ -100,16 +100,14 @@ def process_message(msg):
     otp = extract_otp(msg["sms"])
     masked_number = mask_number(msg["number"])
     
-    msg_html = f'''
-<b>🔥 {service} {country} ✨</b>
+    msg_html = f'''<b>🔥 {service} {country} ✨</b>
 
 ⏰ Time: {msg['date']}
 🌍 Country: {country} {flag}
 ⚙️ Service: {service}
 ☎️ Number: {masked_number}
 
-<code>🔑 OTP: </code>
-<code>{otp}</code>
+<code>🔑 OTP: {otp}</code>
 
 📩 Full Message: {msg['sms']}'''
     
@@ -188,17 +186,20 @@ try:
                 print(f"New transcribed text: {text}")
             
             response_input = driver.find_element(By.ID, "audio-response")
-            response_input.clear()  # Clear any existing text
+            response_input.clear()
             response_input.send_keys(text)
-            time.sleep(1)  # Small delay before clicking verify
+            time.sleep(1)
             verify_btn = driver.find_element(By.ID, "recaptcha-verify-button")
             verify_btn.click()
             print("Submitted audio response")
             
-            # Wait for verification
             driver.switch_to.default_content()
             print("Waiting for verification...")
             time.sleep(3)
+        else:
+            print("Could not find challenge iframe")
+    else:
+        print("Could not find captcha iframe")
     
     # Click login button
     login_button = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "login100-form-btn")))
@@ -206,11 +207,10 @@ try:
     print("Clicked login button")
     time.sleep(3)
     
-    # Check login success (give more time and check multiple URLs)
-    time.sleep(5)  # Give more time for redirect
+    # Check login success
+    time.sleep(5)
     print(f"Current URL after login: {driver.current_url}")
     
-    # Check multiple possible success URLs
     if any(x in driver.current_url for x in ["/dashboard", "/agent", "/ints/agent"]):
         print("\nLogin successful!")
         
@@ -235,7 +235,7 @@ try:
         rows = driver.find_elements(By.CSS_SELECTOR, "table#dt tbody tr")
         message_count = 0
         
-        for row in rows[:5]:  # Only process first 5 messages
+        for row in rows[:5]:
             if row.get_attribute("style") and "display: none" in row.get_attribute("style"):
                 continue
             
@@ -274,20 +274,18 @@ try:
         
         while True:
             try:
-                # Refresh and get new messages
                 driver.refresh()
-                time.sleep(5)  # Increased wait time after refresh
+                time.sleep(5)
                 
-                # Check if we're still logged in
                 if "login" in driver.current_url:
                     raise Exception("Session expired")
                 
                 show_report_btn = wait.until(EC.presence_of_element_located(
                     (By.CSS_SELECTOR, "input#sbutton[value='Show Report']")))
                 driver.execute_script("arguments[0].scrollIntoView(true);", show_report_btn)
-                time.sleep(2)  # Increased wait time before clicking
+                time.sleep(2)
                 driver.execute_script("arguments[0].click();", show_report_btn)
-                time.sleep(3)  # Wait after clicking
+                time.sleep(3)
                 
                 rows = driver.find_elements(By.CSS_SELECTOR, "table#dt tbody tr")
                 
@@ -327,7 +325,6 @@ try:
                         print(f"Error processing row: {row_error}")
                         continue
                 
-                # Reset retry count on successful iteration
                 retry_count = 0
                 time.sleep(10)
                 
@@ -335,102 +332,20 @@ try:
                 print(f"\nError during monitoring: {e}")
                 retry_count += 1
                 
-                if "login" in driver.current_url:
-                    print("\nSession expired, performing re-login...")
-                    # Fill in username and password
-                    driver.find_element(By.NAME, 'username').send_keys(USERNAME)
-                    driver.find_element(By.NAME, 'password').send_keys(PASSWORD)
-                    
-                    # Handle reCAPTCHA
-                    driver.switch_to.default_content()
-                    captcha_iframe = None
-                    for frame in driver.find_elements(By.TAG_NAME, "iframe"):
-                        src = frame.get_attribute("src")
-                        if src and "recaptcha" in src:
-                            captcha_iframe = frame
-                            break
-                    
-                    if captcha_iframe:
-                        driver.switch_to.frame(captcha_iframe)
-                        checkbox = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "recaptcha-checkbox-border")))
-                        checkbox.click()
-                        time.sleep(2)
-                        driver.switch_to.default_content()
-                        
-                        # Handle audio challenge
-                        challenge_iframe = None
-                        for _ in range(15):
-                            for frame in driver.find_elements(By.TAG_NAME, "iframe"):
-                                title = frame.get_attribute("title")
-                                if title and "recaptcha challenge" in title:
-                                    challenge_iframe = frame
-                                    break
-                            if challenge_iframe:
-                                break
-                            time.sleep(1)
-                        
-                        if challenge_iframe:
-                            driver.switch_to.frame(challenge_iframe)
-                            audio_btn = wait.until(EC.element_to_be_clickable((By.ID, "recaptcha-audio-button")))
-                            audio_btn.click()
-                            time.sleep(2)
-                            
-                            # Get and process audio
-                            audio_src = wait.until(EC.presence_of_element_located((By.ID, "audio-source"))).get_attribute("src")
-                            print("\nAudio source URL:", audio_src)
-                            
-                            # Use RapidAPI for transcription
-                            url = "https://speech-to-text-ai.p.rapidapi.com/transcribe"
-                            querystring = {"url": audio_src, "lang": "en", "task": "transcribe"}
-                            headers = {
-                                "x-rapidapi-key": "55c16d2ed5msh8228e6120dda6fbp1d2fbajsn2e0cf583a007",
-                                "x-rapidapi-host": "speech-to-text-ai.p.rapidapi.com"
-                            }
-                            response = requests.post(url, headers=headers, params=querystring)
-                            result = response.json()
-                            text = result.get("text", "")
-                            print(f"Transcribed text: {text}")
-                            
-                            # Submit audio response
-                            response_input = driver.find_element(By.ID, "audio-response")
-                            response_input.send_keys(text)
-                            verify_btn = driver.find_element(By.ID, "recaptcha-verify-button")
-                            verify_btn.click()
-                            print("Submitted audio response")
-                            
-                            # Wait for verification
-                            driver.switch_to.default_content()
-                            print("Waiting for verification...")
-                            time.sleep(3)
-                    
-                    # Click login button
-                    login_button = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "login100-form-btn")))
-                    login_button.click()
-                    print("Clicked login button")
-                    time.sleep(3)
-                    
-                    # Navigate back to SMS page after successful login
-                    print("\nNavigating back to SMS monitoring page...")
-                    driver.get(f"{BASE_URL}/ints/agent/SMSCDRReports")
-                    time.sleep(3)
-                    continue  # Continue monitoring
+                if retry_count >= max_retries:
+                    print("Max retries reached. Exiting...")
+                    break
                 
                 print(f"Retry attempt {retry_count}/{max_retries}")
-                print("Attempting to recover...")
-                time.sleep(5)  # Short wait between retries
+                time.sleep(5)
                 
-                # Try to navigate back to the SMS page
-                print("Navigating back to SMS page...")
-                driver.get(f"{BASE_URL}/ints/agent/SMSCDRReports")
-                time.sleep(3)
-    
+                try:
+                    driver.get(f"{BASE_URL}/ints/agent/SMSCDRReports")
+                    time.sleep(3)
+                except Exception:
+                    pass
     else:
         print("Login failed. Please check the credentials and try again.")
-        
-    else:
-        print("Could not find challenge iframe")
-else:
-    print("Could not find captcha iframe")
 
 except KeyboardInterrupt:
     print("\nStopping script by user request...")
