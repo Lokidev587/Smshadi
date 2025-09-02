@@ -6,5 +6,4 @@ certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.6
 packaging==23.2
-
-# Note: ChromeDriver is automatically managed by webdriver-manager
+flask==2.3.3
