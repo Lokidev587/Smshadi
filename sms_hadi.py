@@ -43,7 +43,7 @@ TELEGRAM_CHAT_IDS = ["-1002780854648", "-1001635870008"]
 # Import country flags handling
 from flags import get_country_flag, COUNTRY_FLAGS
 
-# Setup Chrome Driver for Docker environment
+# Setup Chrome Driver with proper options for Docker
 print("Initializing Chrome Driver...")
 options = Options()
 options.add_argument('--headless')
@@ -54,29 +54,31 @@ options.add_argument('--window-size=1920,1080')
 options.add_argument('--disable-extensions')
 options.add_argument('--disable-web-security')
 options.add_argument('--allow-running-insecure-content')
-options.add_argument('--remote-debugging-port=9222')
+options.add_argument('--disable-background-networking')
+options.add_argument('--disable-background-timer-throttling')
+options.add_argument('--disable-renderer-backgrounding')
+options.add_argument('--disable-backgrounding-occluded-windows')
+options.add_argument('--disable-client-side-phishing-detection')
+options.add_argument('--disable-crash-reporter')
+options.add_argument('--disable-oopr-debug-crash-dump')
+options.add_argument('--no-crash-upload')
+options.add_argument('--disable-low-res-tiling')
+options.add_argument('--disable-ipc-flooding-protection')
 
-# For Docker environment
-if os.path.exists('/usr/bin/google-chrome'):
-    options.binary_location = '/usr/bin/google-chrome'
+# Set Chrome binary path
+options.binary_location = '/usr/bin/google-chrome'
 
 try:
-    # Try to use existing ChromeDriver in Docker image
-    service = Service('/usr/bin/chromedriver')
+    # Use installed ChromeDriver
+    service = Service('/usr/local/bin/chromedriver')
     driver = webdriver.Chrome(service=service, options=options)
-except:
-    # Fallback to webdriver-manager
-    try:
-        from webdriver_manager.chrome import ChromeDriverManager
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
-    except Exception as e:
-        print(f"Failed to initialize Chrome: {e}")
-        print("Keeping Flask server running...")
-        while True:
-            time.sleep(60)
-
-wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, 15)
+    print("Chrome Driver initialized successfully")
+except Exception as e:
+    print(f"Failed to initialize Chrome: {e}")
+    print("Keeping Flask server running...")
+    while True:
+        time.sleep(60)
 
 def extract_country_and_flag(range_str):
     """Extract country name and get its flag"""
@@ -159,7 +161,7 @@ def process_message(msg):
     
     return msg_html
 
-# Main execution code (your existing try-catch block)
+# Main execution with your existing logic
 try:
     print("Navigating to login page...")
     driver.get(f'{BASE_URL}/ints/login')
