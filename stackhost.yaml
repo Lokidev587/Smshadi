@@ -9,9 +9,6 @@ commands:
   build:
     - "pip install -r requirements.txt"
   package:
-    - "wget"
-    - "curl" 
-    - "unzip"
     - "chromium-browser"
     - "chromium-chromedriver"
     - "xvfb"
