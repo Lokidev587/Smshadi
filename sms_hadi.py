@@ -4,7 +4,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 import time
 import json
 import re
@@ -25,13 +24,14 @@ def health():
     return {'status': 'healthy', 'service': 'sms-monitoring-bot'}, 200
 
 def run_flask():
-    app.run(host='0.0.0.0', port=8080, debug=False)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
 
 # Start Flask server in background thread
 flask_thread = threading.Thread(target=run_flask)
 flask_thread.daemon = True
 flask_thread.start()
-print("Flask server started on port 8080")
+print("Flask server started")
 
 # Configuration
 USERNAME = 'Keshav2009'
@@ -43,7 +43,7 @@ TELEGRAM_CHAT_IDS = ["-1002780854648", "-1001635870008"]
 # Import country flags handling
 from flags import get_country_flag, COUNTRY_FLAGS
 
-# Setup Chrome Driver
+# Setup Chrome Driver for Docker environment
 print("Initializing Chrome Driver...")
 options = Options()
 options.add_argument('--headless')
@@ -54,16 +54,30 @@ options.add_argument('--window-size=1920,1080')
 options.add_argument('--disable-extensions')
 options.add_argument('--disable-web-security')
 options.add_argument('--allow-running-insecure-content')
+options.add_argument('--remote-debugging-port=9222')
 
-# Set Chrome binary path for production environment
-if os.environ.get('RENDER'):
+# For Docker environment
+if os.path.exists('/usr/bin/google-chrome'):
     options.binary_location = '/usr/bin/google-chrome'
 
-service = Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service, options=options)
+try:
+    # Try to use existing ChromeDriver in Docker image
+    service = Service('/usr/bin/chromedriver')
+    driver = webdriver.Chrome(service=service, options=options)
+except:
+    # Fallback to webdriver-manager
+    try:
+        from webdriver_manager.chrome import ChromeDriverManager
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+    except Exception as e:
+        print(f"Failed to initialize Chrome: {e}")
+        print("Keeping Flask server running...")
+        while True:
+            time.sleep(60)
+
 wait = WebDriverWait(driver, 15)
 
-# ... rest of your functions remain the same ...
 def extract_country_and_flag(range_str):
     """Extract country name and get its flag"""
     if not range_str:
@@ -145,6 +159,7 @@ def process_message(msg):
     
     return msg_html
 
+# Main execution code (your existing try-catch block)
 try:
     print("Navigating to login page...")
     driver.get(f'{BASE_URL}/ints/login')
