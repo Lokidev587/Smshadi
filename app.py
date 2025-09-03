@@ -1,36 +1,34 @@
 from flask import Flask, jsonify
 import threading
 import time
-import subprocess
 import os
+import sys
 
 app = Flask(__name__)
 
 # Global variable to track bot status
 bot_status = "not running"
-bot_process = None
+bot_thread = None
 
 def run_bot():
-    """Run the SMS bot in a separate process"""
-    global bot_status, bot_process
+    """Run the SMS bot"""
+    global bot_status
     try:
-        bot_status = "starting"
-        # Run the bot script using subprocess
-        bot_process = subprocess.Popen(["python", "sms_hadi.py"], 
-                                      stdout=subprocess.PIPE, 
-                                      stderr=subprocess.PIPE)
         bot_status = "running"
+        print("Starting SMS bot...")
         
-        # Wait for the process to complete
-        stdout, stderr = bot_process.communicate()
+        # Import and run the bot directly
+        from sms_hadi import run_sms_bot
+        success = run_sms_bot()
         
-        if bot_process.returncode == 0:
+        if success:
             bot_status = "completed successfully"
         else:
-            bot_status = f"failed with error: {stderr.decode()}"
+            bot_status = "failed"
             
     except Exception as e:
         bot_status = f"crashed: {str(e)}"
+        print(f"Bot error: {e}")
 
 @app.route('/')
 def home():
@@ -42,15 +40,15 @@ def home():
 
 @app.route('/start')
 def start_bot():
-    global bot_process, bot_status
+    global bot_thread, bot_status
     
-    if bot_process and bot_process.poll() is None:
+    if bot_thread and bot_thread.is_alive():
         return jsonify({"status": "already running", "bot": bot_status})
     
     # Start the bot in a separate thread
-    thread = threading.Thread(target=run_bot)
-    thread.daemon = True
-    thread.start()
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.daemon = True
+    bot_thread.start()
     
     return jsonify({"status": "starting", "bot": bot_status})
 
@@ -58,11 +56,17 @@ def start_bot():
 def status():
     return jsonify({"status": "online", "bot": bot_status})
 
+@app.route('/health')
+def health():
+    return jsonify({"status": "healthy"})
+
 if __name__ == '__main__':
     # Start the bot automatically when deployed
     if os.environ.get('RENDER'):
+        print("Running on Render, starting bot...")
         bot_thread = threading.Thread(target=run_bot)
         bot_thread.daemon = True
         bot_thread.start()
     
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
