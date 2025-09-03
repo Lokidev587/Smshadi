@@ -6,3 +6,6 @@ certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.6
 packaging==23.2
+Flask==3.0.0
+gunicorn==21.2.0
+chromium-browser==0.0.1
