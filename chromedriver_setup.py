@@ -3,12 +3,11 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.os_manager import ChromeType
 
 def get_chrome_options():
     """Configure Chrome options for Render"""
     chrome_options = Options()
-    chrome_options.add_argument("--headless=new")  # Use new headless mode
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
@@ -23,9 +22,7 @@ def get_chrome_driver():
     """Get Chrome driver configured for Render"""
     chrome_options = get_chrome_options()
     
-    # Use webdriver-manager to handle ChromeDriver with Chromium
-    service = Service(
-        ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-    )
+    # Use webdriver-manager to handle ChromeDriver (it will auto-download Chrome)
+    service = Service(ChromeDriverManager().install())
     
     return webdriver.Chrome(service=service, options=chrome_options)
