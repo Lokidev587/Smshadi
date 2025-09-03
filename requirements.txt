@@ -1,7 +1,7 @@
 selenium==4.16.0
 requests==2.31.0
 webdriver-manager==4.0.1
-urllib3<2.0.0,>=1.25.8  # Changed from specific version to compatible range
+urllib3<2.0.0,>=1.25.8
 certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.6
