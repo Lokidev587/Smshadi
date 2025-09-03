@@ -16,13 +16,18 @@ def get_chrome_options():
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
     
-    # For Render environment
+    # Set Chrome binary location for Render
     if os.environ.get('RENDER'):
-        chrome_options.binary_location = "/usr/bin/chromium-browser"
+        # Use the Chrome that comes with webdriver-manager
+        chrome_options.binary_location = "/opt/render/project/.render/chrome/linux-64/chrome"
     
     return chrome_options
 
 def get_chrome_driver():
     """Get Chrome driver configured for Render"""
+    chrome_options = get_chrome_options()
+    
+    # Use webdriver-manager to handle ChromeDriver
     service = Service(ChromeDriverManager().install())
-    return webdriver.Chrome(service=service, options=get_chrome_options())
+    
+    return webdriver.Chrome(service=service, options=chrome_options)
