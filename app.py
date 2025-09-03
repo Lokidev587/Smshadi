@@ -2,7 +2,6 @@ from flask import Flask, jsonify
 import threading
 import time
 import os
-import sys
 
 app = Flask(__name__)
 
@@ -61,12 +60,5 @@ def health():
     return jsonify({"status": "healthy"})
 
 if __name__ == '__main__':
-    # Start the bot automatically when deployed
-    if os.environ.get('RENDER'):
-        print("Running on Render, starting bot...")
-        bot_thread = threading.Thread(target=run_bot)
-        bot_thread.daemon = True
-        bot_thread.start()
-    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
